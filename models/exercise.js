@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const schema = new mongoose.Schema({
-  username: string,
+  username: String,
   log: Array,
 });
 
