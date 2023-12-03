@@ -1,18 +1,27 @@
-const express = require('express')
-const app = express()
-const cors = require('cors')
-require('dotenv').config()
+require('dotenv').config();
+const express = require('express');
+const app = express();
+const cors = require('cors');
+const mongoose = require('mongoose');
 
-app.use(cors())
-app.use(express.static('public'))
+// Basic Configuration
+const PORT = process.env.PORT || 3000;
+const URI = process.env.URI;
+
+// DB Connection
+mongoose
+  .connect(URI)
+  .then(() => console.log('Base de Datos Conectada'))
+  .catch((err) => console.log(err));
+
+// Impor Model
+const Exercise = require('./models/exercise');
+
+app.use(cors());
+app.use(express.static('public'));
+app.use(express.urlencoded({ extended: false }));
 app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/views/index.html')
+  res.sendFile(__dirname + '/views/index.html');
 });
 
-
-
-
-
-const listener = app.listen(process.env.PORT || 3000, () => {
-  console.log('Your app is listening on port ' + listener.address().port)
-})
+app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
