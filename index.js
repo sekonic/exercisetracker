@@ -15,13 +15,36 @@ mongoose
   .catch((err) => console.log(err));
 
 // Impor Model
-const Exercise = require('./models/exercise');
+const User = require('./models/user');
 
+// Middlewares
 app.use(cors());
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: false }));
+
+// Routes
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/views/index.html');
 });
+
+// Add User
+app.post('/api/users/', async (req, res) => {
+  let { username } = await req.body;
+  let userData;
+  let data = await User.find({ username: username });
+
+  data.length === 0
+    ? (userData = await User.create({ username: username }))
+    : (userData = data[0]);
+
+  res
+    .status(200)
+    .send(JSON.stringify({ username: userData.username, _id: userData._id }));
+});
+
+// Add Exercises
+app.post('/api/users/:_id/exercises', (req, res) => {});
+
+app.get('/api/users', (req, res) => {});
 
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
