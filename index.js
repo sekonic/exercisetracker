@@ -98,28 +98,32 @@ app.post('/api/users/:_id/exercises', async (req, res) => {
 
   let newExercise = {
     description,
-    duration,
+    duration: Number(duration),
     date,
   };
 
   if (mongoose.isValidObjectId(id)) {
     try {
-      let data = await User.find({ _id: id });
-      if (data.length === 0) {
-        res.send('_ID NOT FOUND');
+      let data = await User.findOne({ _id: id });
+      if (!data) {
+        res.json({ error: '_ID NOT FOUND' });
       } else {
-        let log = data[0].log;
+        let log = data.log;
         log.push(newExercise);
         await User.updateOne({ _id: id }, { $set: { log: log } });
-        newExercise._id = data[0]._id;
-        newExercise.username = data[0].username;
-        res.status(200).send(JSON.stringify(newExercise));
+        res.json({
+          _id: data._id,
+          username: data.username,
+          description,
+          duration: Number(duration),
+          date,
+        });
       }
     } catch (error) {
       console.log(error);
     }
   } else {
-    res.status(404).send('NOT VALID _ID');
+    res.json({ error: 'NOT VALID _ID' });
   }
 });
 
