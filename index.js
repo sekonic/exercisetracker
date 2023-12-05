@@ -43,7 +43,16 @@ app.post('/api/users/', async (req, res) => {
 });
 
 // Add Exercises
-app.post('/api/users/:_id/exercises', (req, res) => {});
+app.post('/api/users/:_id/exercises', async (req, res) => {
+  let { description, duration, date } = await req.body;
+  let id = await req.body[":_id"];
+  console.log( { id } );
+  console.log( { description } );
+  console.log( { duration } );
+  console.log( { date } );
+
+  res.status(200).send("INFO RECIBIDA");
+});
 
 // List all users
 app.get('/api/users/', async (req, res) => {
