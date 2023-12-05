@@ -45,6 +45,12 @@ app.post('/api/users/', async (req, res) => {
 // Add Exercises
 app.post('/api/users/:_id/exercises', (req, res) => {});
 
-app.get('/api/users', (req, res) => {});
+// List all users
+app.get('/api/users/', async (req, res) => {
+  let data = await User.find().select('username _id');
+  res
+    .status(200)
+    .send(JSON.stringify(data));
+});
 
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
