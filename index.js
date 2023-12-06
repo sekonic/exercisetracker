@@ -14,13 +14,14 @@ mongoose
   .then(() => console.log('Base de Datos Conectada'))
   .catch((err) => console.log(err));
 
-// Impor Model
+// Import Models
 const User = require('./models/user');
+const Log = require('./models/log');
 
 // Middlewares
 app.use(cors());
 app.use(express.static('public'));
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 
 // Filter log array
 function filterLogArray(arr, from, to, limit) {
@@ -72,51 +73,52 @@ app.post('/api/users/', async (req, res) => {
   let { username } = await req.body;
   let userData;
   try {
-    let data = await User.find({ username: username });
+    let data = await User.findOne({ username: username });
 
-    data.length === 0
-      ? (userData = await User.create({ username: username }))
-      : (userData = data[0]);
+    data
+      ? (userData = data)
+      : (userData = await User.create({ username: username }));
 
-    res
-      .status(200)
-      .send(JSON.stringify({ username: userData.username, _id: userData._id }));
+    res.status(200).json(userData);
   } catch (error) {
     console.log(error);
   }
 });
 
+// List all users
+app.get('/api/users/', async (req, res) => {
+  let data = await User.find();
+  res.status(200).json(data);
+});
+
 // Add Exercises
 app.post('/api/users/:_id/exercises', async (req, res) => {
-  let { description, duration, date } = await req.body;
-  let id = await req.body[':_id'];
+  let { description, duration, date } = req.body;
+  let { _id } = req.params;
+  duration = Number(duration);
 
   // Date handling
-  date
-    ? (date = new Date(date).toDateString())
-    : (date = new Date().toDateString());
+  date ? (date = new Date(date)) : (date = new Date());
 
-  let newExercise = {
-    description,
-    duration: Number(duration),
-    date,
-  };
-
-  if (mongoose.isValidObjectId(id)) {
+  if (mongoose.isValidObjectId(_id)) {
     try {
-      let data = await User.findOne({ _id: id });
-      if (!data) {
+      let userData = await User.findOne({ _id });
+      if (!userData) {
         res.json({ error: '_ID NOT FOUND' });
       } else {
-        let log = data.log;
-        log.push(newExercise);
-        await User.updateOne({ _id: id }, { $set: { log: log } });
-        res.json({
-          _id: data._id,
-          username: data.username,
+        await Log.create({
+          uid: _id,
+          username: userData.username,
           description,
-          duration: Number(duration),
+          duration,
           date,
+        });
+        res.status(200).json({
+          _id,
+          username: userData.username,
+          description,
+          duration,
+          date: date.toDateString(),
         });
       }
     } catch (error) {
@@ -127,38 +129,40 @@ app.post('/api/users/:_id/exercises', async (req, res) => {
   }
 });
 
-// List all users
-app.get('/api/users/', async (req, res) => {
-  let data = await User.find().select('username _id');
-  res.status(200).send(JSON.stringify(data));
-});
-
 // Logs
 app.get('/api/users/:_id/logs', async (req, res) => {
   let { _id } = req.params;
-  let { from, to, limit } = req.query;
+  let from = req.query.from || 0;
+  let to = req.query.to || Date.now();
+  let limit = Number(req.query.limit) || 0;
+
+  console.log(from);
+  console.log(to);
 
   if (mongoose.isValidObjectId(_id)) {
     try {
-      let data = await User.findOne({ _id });
-      if (!data) {
+      let logs = await Log.find({
+        uid: _id,
+        date: { $gte: new Date(from), $lte: new Date(to) }
+      }).limit(limit);
+      if (!logs) {
         res.json({ error: '_ID NOT FOUND' });
       } else {
-        let arr = data.log;
-
-        let logs = filterLogArray(arr, from, to, limit);
-
-        let count = logs.length;
-
+        let exercises = logs.map((log) => {
+          return {
+            description: log.description,
+            duration: log.duration,
+            date: log.date.toDateString(),
+          };
+        });
+        let count = exercises.length;
+        let user = await User.findOne({ _id });
         let response = {
-          _id: data._id,
-          username: data.username,
+          _id: user._id,
+          username: user.username,
+          count,
+          log: exercises,
         };
-        if (from) response.from = from;
-        if (to) response.to = to;
-        response.count = count;
-        response.log = logs;
-
         res.status(200).json(response);
       }
     } catch (error) {

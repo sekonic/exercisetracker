@@ -1,10 +1,12 @@
 const mongoose = require('mongoose');
 
 const schema = new mongoose.Schema({
-  username: String,
-  log: Array,
-});
+  username: {
+    type: String,
+    unique: true
+  }
+}, { versionKey: false });
 
-const Exercise = mongoose.model('Exercise', schema);
+const UserExercise = mongoose.model('UserExercise', schema);
 
-module.exports = Exercise;
+module.exports = UserExercise;
